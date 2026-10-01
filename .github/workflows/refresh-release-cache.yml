@@ -1,0 +1,68 @@
+name: Refresh release cache
+
+# The download pages and the TUS Plugin Manager read builds/<version>.json instead of
+# calling the GitHub releases API directly: that API allows 60 requests per hour per IP
+# address and a room of testers shares one. A version listed in versions.json whose file
+# is missing is skipped silently, so until now a new release stayed invisible to the
+# Plugin Manager until someone remembered to write its file by hand. Nothing did that
+# automatically, which is how 1.4.1 ended up listed but absent.
+
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+    inputs:
+      refresh_all:
+        description: 'Also re-fetch files that already exist (use after re-uploading assets)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency: refresh-release-cache
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch the release list and any missing version file
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REFRESH_ALL: ${{ inputs.refresh_all }}
+        run: |
+          set -euo pipefail
+
+          # --paginate emits one JSON array per page; slurp them back into one list.
+          gh api --paginate repos/dsp56300/gearmulator/releases > releases.raw
+          jq -s 'add | map(select(.draft == false))' releases.raw > releases.json
+          rm releases.raw
+
+          # Same content and order the API serves, which is what versions.json already holds.
+          jq 'map(.tag_name)' releases.json > builds/versions.json
+
+          # Only fetch what is absent: the files also carry download counts, so re-fetching
+          # everything on a schedule would commit churn every hour.
+          for tag in $(jq -r '.[].tag_name' releases.json); do
+            if [ "${REFRESH_ALL:-false}" = "true" ] || [ ! -f "builds/$tag.json" ]; then
+              gh api "repos/dsp56300/gearmulator/releases/tags/$tag" | jq . > "builds/$tag.json"
+              echo "wrote builds/$tag.json"
+            fi
+          done
+
+          rm releases.json
+
+      - name: Commit if anything changed
+        run: |
+          set -euo pipefail
+          git add builds
+          if git diff --cached --quiet; then
+            echo 'cache already up to date'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Refresh release download cache'
+          git push
