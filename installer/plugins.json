@@ -1650,6 +1650,11 @@
           ]
         }
       ]
+    },
+    {
+      "id": "DSPBridgeServer",
+      "name": "DSP Bridge Server",
+      "description": "Runs plugin DSP emulation in another process or on another machine"
     }
   ]
 }
