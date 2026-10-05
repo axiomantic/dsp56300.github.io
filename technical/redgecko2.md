@@ -1,7 +1,7 @@
 ---
 title: "Red Gecko 2 (Nord Modular G2) Technical Information"
 layout: default
-permalink: /technical/rg2
+permalink: /technical/redgecko2
 ---
 
 ```

@@ -42,6 +42,7 @@ A: The goal of this project is to preserve various digital musical instruments a
 | Waldorf MW2/XT | Motorola 56303 | x1 | released |
 | Clavia Micro Modular | Motorola 56303 | x1 |  |
 | Clavia Nord Modular | Motorola 56303 | x4 |  |
+| Clavia Nord Modular G2 | Motorola 56367 | x8 |  |
 | Clavia Nord Lead 2X | Motorola 56362 @ 120 Mhz | x2 | released |
 | Clavia Nord Lead 3 | Motorola 56362 | x6 | development |
 | Novation SuperNova II | 8x Motorola 56362   1x Motorola 56303 | x9 | alpha release |
