@@ -34,7 +34,7 @@ The Clavia Nord Modular G2 (2004) is a hardware-accelerated modular synthesizer.
 | **Host Microcontroller** | Motorola MCF5407CAI162 (ColdFire V4, 32-bit) |
 | **MCU Core Clock** | 162.0 MHz nominal (catalog rating; see clock distribution) |
 | **DSP Array** | Up to 8× Motorola DSP56367 (24-bit fixed-point) |
-| **DSP Core Clock** | 147,456,000 Hz (147.456 MHz crystal oscillator) |
+| **DSP Core Clock** | 147,456,000 Hz (147.456 MHz crystal) |
 | **Audio Sample Rate** | 96,000 Hz (96 kHz native frame rate) |
 | **DSP Cycles per Frame** | Exactly 1,536 DSP clock cycles per audio frame |
 | **Control Frame Rate** | 24,000 Hz (1 control frame every 4 audio frames; 6,144 cycles) |
@@ -45,7 +45,7 @@ The Clavia Nord Modular G2 (2004) is a hardware-accelerated modular synthesizer.
 | **Boot Flash** | 512 KiB NOR Flash mapped at CS0 / CSBOOT (`U21`) |
 | **USB Controller** | Philips ISP1181ADGG (`U24`) Full-Speed USB controller |
 | **Panel Displays** | 4× multi-cell graphical LCDs (quiescent CS4 buffer in emulation) |
-| **Panel Controls** | 5 scanned analogue controls via Maxim MAX1039 I²C ADC; rotary encoders |
+| **Panel Controls** | 5 scanned analogue inputs via Maxim MAX1039 I²C ADC; encoders |
 
 ### Architectural Comparison with Sibling Synthesizers
 
@@ -57,8 +57,8 @@ Within the Gearmulator ecosystem, the G2 represents the most computationally dem
 | **DSP Array** | 4–8× Motorola DSP56367 | 1–3× Motorola DSP56362 | 2× Motorola DSP56362 | 1–2× Motorola DSP56303 |
 | **DSP Clock** | 147.456 MHz | 101.606 MHz | 100.0 MHz | 100.0 MHz |
 | **Sample Rate** | 96,000 Hz | 44,100 Hz | 98,200 Hz | 44,100 Hz |
-| **Synthesis Model** | Dynamic modular graph (PRAM injection) | Static ROM firmware + expansion | Dual-DSP static split pipeline | Static ROM wavetable firmware |
-| **Host Bus** | CS1 HDI08 (One-cold active-low) | Discrete HDI08 ports (CS-decoded) | Shared + discrete HDI08 ports | Discrete HDI08 ports |
+| **Synthesis Model** | Dynamic graph (PRAM injection) | Static ROM + expansion | Dual-DSP split pipeline | Static ROM wavetable |
+| **Host Bus** | CS1 HDI08 (One-cold select) | Discrete HDI08 ports | Shared / discrete HDI08 | Discrete HDI08 ports |
 | **Audio Bus** | ESAI Serial TDM Network | ESAI 20-slot TDM Ring | ESAI Point-to-Point (2× rate) | ESSI Serial Ring |
 | **Emulation** | `mcf5407` (Clean-room C11) + `rg2Lib` | Musashi MC68k + `synthLib` | Musashi MC68k + `synthLib` | Musashi MC68k + `synthLib` |
 
@@ -68,10 +68,11 @@ The Motorola MCF5407 is a 32-bit microprocessor based on the ColdFire Version 4 
 
 ### Architecture & Clock Distribution
 
+- **Core Architecture**: Motorola ColdFire Version 4 (V4) core (*MCF5407UM/D* section 1.1). The *ColdFire Family Programmer's Reference Manual (CFPRM)* treats MMU and FPU as optional per-device modules reported in D0 bits 11 and 12 at reset; "V4e" designates V4 with MMU and FPU (*MCF5485EC* Rev. 4).
 - **Oscillator Can**: Physical crystal oscillator can on the mainboard is rated **53.620 MHz**.
 - **Schematic Net Label**: The schematic identifies the clock net entering the MCU pin as `CPU Ck 54MHz`.
-- **Core Clock**: 162.0 MHz is modeled in the emulator, matching the nominal `MCF5407CAI162` speed grade. A 3× PLL multiplier on 53.620 MHz yields 160.860 MHz (0.7% discrepancy). Without physical oscilloscope verification on CLKIN, the operating frequency sits within this 0.7% window.
-- **Bus Clock (BCLKO)**: The bus clock divider is unmeasured on hardware and underived in the emulator (`G2_MCU_BUS_CLOCK_HZ = 0`). The *Motorola MCF5407 User's Manual (MCF5407UM/D)* permits PSTCLK/BCLKO dividers of 2, 3, or 4 (which at 162.0 MHz core yield 81.0 MHz, 54.0 MHz, or 40.5 MHz).
+- **Core Clock**: 162.0 MHz is modeled in the emulator, matching nominal speed grade. A 3× PLL multiplier on 53.620 MHz yields 160.860 MHz (0.7% discrepancy). Without physical oscilloscope verification on CLKIN, operating frequency sits within this 0.7% window.
+- **Bus Clock (BCLKO)**: Bus clock divider is unmeasured on hardware and underived in the emulator (`G2_MCU_BUS_CLOCK_HZ = 0`). *MCF5407UM/D* permits PSTCLK/BCLKO dividers of 2, 3, or 4 (which at 162.0 MHz core yield 81.0 MHz, 54.0 MHz, or 40.5 MHz).
 
 ### Memory Map
 
@@ -99,34 +100,34 @@ The MCF5407 SIM manages on-chip peripherals and bus arbitration mapped at `MBAR`
 
 | Offset | Register / Peripheral | Description |
 |---|---|---|
-| `MBAR + 0x006` | `IRQPAR` | Pin Assignment Register: remaps external interrupt pins (`IRQ1`, `IRQ3`, `IRQ5`, `IRQ7`) |
-| `MBAR + 0x04B` | `AVCR` | Autovector Control Register: configures autovectored interrupt vectors 25–31 |
-| `MBAR + 0x04C .. 0x055` | `ICR0 .. ICR9` | Interrupt Control Registers prioritizing 10 internal sources (offsets `0x056`–`0x057` reserved) |
-| `MBAR + 0x140` | `Timer 1` | System Tick Timer: drives RTOS task scheduling and telemetry loops |
+| `MBAR + 0x006` | `IRQPAR` | Pin Assignment: remaps external interrupt pins (`IRQ1`, `IRQ3`, `IRQ5`, `IRQ7`) |
+| `MBAR + 0x04B` | `AVCR` | Autovector Control: configures autovectored interrupt vectors 25–31 |
+| `MBAR + 0x04C .. 0x055` | `ICR0 .. ICR9` | Interrupt Control Registers prioritizing 10 internal sources |
+| `MBAR + 0x140` | `Timer 1` | System Tick: drives RTOS task scheduling and telemetry loops |
 | `MBAR + 0x180` | `Timer 2` | Interval Timer: microsecond delay calibration and timeout enforcement |
-| `MBAR + 0x1C0` | `UART0` (DUART Channel A) | Physical MIDI I/O: 31,250 baud (divider `0x0036`), mapped to `ICR4` (user vector `0x42`) |
-| `MBAR + 0x280` | `M-Bus` (I²C Controller) | Master I²C interface: drives panel Maxim MAX1039 ADC polling loop |
+| `MBAR + 0x1C0` | `UART0` | Physical MIDI I/O: 31,250 baud (divider `0x0036`), mapped to `ICR4` (vector `0x42`) |
+| `MBAR + 0x280` | `M-Bus` | Master I²C interface: drives panel Maxim MAX1039 ADC polling loop |
 
 ### ColdFire Exception Model & Stack Frames
 
-The MCF5407 implements the standard ColdFire 8-byte, 2-longword exception frame format:
+The MCF5407 implements the standard ColdFire 8-byte exception frame:
 
 ```
 +0x00  [ FORMAT 31:28 ] [ FS[3:2] 27:26 ] [ VEC[7:0] 25:18 ] [ FS[1:0] 17:16 ] [ Status Register 15:0 ]
 +0x04  [ Program Counter 31:0                                                                           ]
 ```
 
-- **Self-Aligning Stack**: Stack frame base is aligned to a 4-byte boundary: `base = (SP - 8) & ~3`. Misalignment is recorded in `FORMAT` (`4 + (SP & 3)`), generating formats `$4`, `$5`, `$6`, and `$7`.
-- **Fault Status (FS)**: The 4-bit fault status code is split across bits 27:26 and 17:16, distinguishing instruction fetch, operand read, operand write, and write-protect faults.
-- **Version 4 Return PC**: On access errors, stacked PC points to the faulting instruction (*MCF5407UM/D* folio 4-17), unlike V2/V3 cores which stack mid-instruction.
+- **Self-Aligning Stack**: Frame base aligns to a 4-byte boundary: `base = (SP - 8) & ~3`. Misalignment is recorded in `FORMAT` (`4 + (SP & 3)`), producing formats `$4`, `$5`, `$6`, and `$7`.
+- **Fault Status (FS)**: Fault code is split across bits 27:26 and 17:16, distinguishing instruction fetch, operand read, operand write, and write-protect faults.
+- **Version 4 Return PC**: On access errors, stacked PC points directly to the faulting instruction (*MCF5407UM/D* folio 4-17), unlike V2/V3 cores which stack mid-instruction.
 - **Vector Base Register (VBR)**: VBR must be 1 MByte aligned (`VBR[19:0]` read as zero). The 1,024-byte vector table occupies `VBR + 0x000` through `VBR + 0x3FC`.
 
 ## Flash Memory & System SDRAM
 
-The G2 utilizes a partitioned dual-flash architecture separating low-level boot initialization from runtime firmware and patch storage:
+The G2 utilizes a partitioned dual-flash architecture separating boot initialization from runtime firmware and patch storage:
 
-- **Boot Flash (`U21`)**: STMicroelectronics or AMD M29LV040B 512 KiB (4 Mbit) uniform sector Flash on CS0 / CSBOOT. Holds the ColdFire reset vector, board diagnostics, SDRAM initialization, and stage-1 bootloader.
-- **Patch & OS Flash (`U37`)**: AMD / Spansion Am29LV640DU 8 MiB (64 Mbit) Flash on CS2 (`0x12000000`–`0x127FFFFF`), decoded with mask register `CSMR2=$007F0001`.
+- **Boot Flash (`U21`)**: STMicroelectronics or AMD M29LV040B 512 KiB uniform sector Flash on CS0 / CSBOOT. Holds ColdFire reset vector, board diagnostics, SDRAM initialization, and stage-1 bootloader.
+- **Patch & OS Flash (`U37`)**: AMD / Spansion Am29LV640DU 8 MiB Flash on CS2 (`0x12000000`–`0x127FFFFF`), decoded with mask register `CSMR2=$007F0001`.
 
 | Flash Offset | Size | Purpose | Contents |
 |---|---|---|---|
@@ -134,15 +135,15 @@ The G2 utilizes a partitioned dual-flash architecture separating low-level boot 
 | `0x080000–0x0FFFFF` | 512 KiB | System Resources | Graphical LCD bitmap fonts, parameter curves, lookup tables |
 | `0x100000–0x1FFFFF` | 1 MiB | DSP Kernel Binaries | DSP bootstrap loaders, resident audio kernels, math routines |
 | `0x200000–0x4FFFFF` | 3 MiB | Factory Presets | Factory patch banks (Banks 1–8) and performance setups |
-| `0x500000–0x7FFFFF` | 3 MiB | User Storage | User patch banks (Banks 9–16), system settings, MIDI configurations |
+| `0x500000–0x7FFFFF` | 3 MiB | User Storage | User patch banks (Banks 9–16), system settings, MIDI setups |
 
 ### System SDRAM Configuration
 
-Main system memory consists of 8 MiB of SDRAM mapped from `0x30000000` through `0x307FFFFF`. During initial boot, the loader configures the SDRAM controller registers (`SDCR`, `SDTR`, `SDAR0`, `SDMR0`):
+Main system memory consists of 8 MiB of SDRAM mapped from `0x30000000` through `0x307FFFFF`. During initial boot, the loader configures SDRAM controller registers (`SDCR`, `SDTR`, `SDAR0`, `SDMR0`):
 
 1. Sets CAS latency (2 cycles) and refresh rate intervals.
 2. Unpacks the operating system image into base address `0x30000400`.
-3. Allocates RTOS execution heaps, USB packet ring buffers, MIDI queues, dynamic patch graphs, and modulation tables.
+3. Allocates RTOS execution heaps, USB ring buffers, MIDI queues, dynamic patch graphs, and modulation tables.
 
 ## Motorola DSP56367 Octa-DSP Array
 
@@ -179,6 +180,15 @@ The eight DSPs are organized into functional roles determined dynamically by the
 - **DSPs 1–3**: Baseboard voice synthesis engines and insert effects processors (reverb, delay, chorus, vocoder).
 - **DSPs 4–7**: Expansion voice synthesis engines, dynamically doubling polyphony when fitted.
 
+### DSP56367 Internal Memory Architecture
+
+According to *DSP56367 User's Manual (DSP56367UM)* section 3.1:
+
+- **Program (P) Memory**: 3K × 24 internal RAM (1K usable as instruction cache or ROM patch), 40K × 24 internal ROM, and 192 × 24 bootstrap ROM (`$FF0000`–`$FF00BF`).
+- **Data (X) Memory**: 13K × 24 internal RAM, 32K × 24 internal ROM.
+- **Data (Y) Memory**: 7K × 24 internal RAM, 8K × 24 internal ROM.
+- **Memory-Switch Mode**: Internal logic can reallocate 5K from X RAM and 2K from Y RAM into P space, expanding executable Program RAM up to 10K × 24 words.
+
 ### Clocking & Frame Calculations
 
 - **DSP Core Clock**: 147,456,000 Hz derived from a crystal oscillator.
@@ -190,7 +200,7 @@ The eight DSPs are organized into functional roles determined dynamically by the
 
 ### Dynamic Patch Graph Execution vs Fixed-Architecture Synths
 
-Fixed-architecture synthesizers (such as the Access Virus, Waldorf microQ, or Nord Lead 2X) execute a static ROM binary with fixed DSP instructions. The G2 operates on a fundamentally different paradigm:
+Fixed-architecture synths execute a static ROM binary with fixed DSP instructions. The G2 operates on a dynamic paradigm:
 
 1. The user builds or edits a modular patch in the G2 Editor software.
 2. The editor compiles the modular wiring graph into a linear chain of optimized DSP assembly routines.
@@ -223,19 +233,20 @@ Instead of using binary address decoding logic, the G2 routes address lines **A3
 
 ### HDI08 Register Map & Bus Protocols
 
-Within each DSP's 8-byte addressing slot, lines A2..A0 select the internal HDI08 registers:
+According to *DSP56367UM* Table 8-8 (section 8.6, folio 8-19), lines A2..A0 select the internal HDI08 registers from the host side:
 
 | Offset | Register | Direction | Function |
 |---|---|---|---|
-| `+0x00` | `ICR` | Read / Write | Interface Control Register (interrupt enables, host flags HF0/HF1) |
+| `+0x00` | `ICR` | Read / Write | Interface Control Register (bit 5 `HLEND` selects byte endianness) |
 | `+0x01` | `CVR` | Read / Write | Command Vector Register (host command triggers, vector numbers) |
 | `+0x02` | `ISR` | Read Only | Interface Status Register (RXDF, TXDE, TRDY, host flags HF2/HF3) |
 | `+0x03` | `IVR` | Read / Write | Interrupt Vector Register |
-| `+0x04` | `RXH / TXH` | Read / Write | Receive / Transmit High Byte (Bits 23:16) |
-| `+0x05` | `RXM / TXM` | Read / Write | Receive / Transmit Mid Byte (Bits 15:8) |
-| `+0x06` | `RXL / TXL` | Read / Write | Receive / Transmit Low Byte (Bits 7:0) |
+| `+0x04` | Reserved | Read Only | Reserved (reads `0x00`) |
+| `+0x05` | Data High / Low | Read / Write | `RXH / TXH` (`HLEND=0`) or `RXL / TXL` (`HLEND=1`) |
+| `+0x06` | Data Mid | Read / Write | `RXM / TXM` (bits 15:8) |
+| `+0x07` | Data Low / High | Read / Write | `RXL / TXL` (`HLEND=0`) or `RXH / TXH` (`HLEND=1`) |
 
-Writing to `RXL` or reading from `RXL` latches the complete 24-bit word and updates the transfer handshakes (`TXDE` / `RXDF`).
+Byte lane ordering is governed by the host-writable `HLEND` bit (`ICR` bit 5). When `HLEND=0` (default big-endian), byte `+0x05` transfers bits 23:16 and byte `+0x07` transfers bits 7:0. Accessing `RXL` (offset `+0x07` with `HLEND=0`) latches the 24-bit word and toggles the transfer handshake flags (`TXDE` / `RXDF`).
 
 ## DSP Boot Sequence
 
@@ -244,9 +255,9 @@ The Nord Modular G2 executes a four-phase bootstrap sequence to bring the octa-D
 ### Phase 1: Hardware Bootstrap
 
 1. The ColdFire MCU asserts the shared DSP hardware reset line via the control latch at CS5 (`g_cs5Base`).
-2. DSP hardware boot mode pins (MODA–MODD) are strapped to configure HDI08 Bootstrap mode.
-3. Upon reset release, each DSP56367 begins execution from its on-chip Bootstrap ROM at `0xFFFF00`.
-4. The bootstrap ROM configures the HDI08 port for 8-bit slave transfers, clears interrupt masks, and spins awaiting host words.
+2. DSP hardware boot mode pins (MODA–MODD) are strapped for Mode C (HDI08 Bootstrap mode; *DSP56367UM* section 6.3).
+3. Upon reset release, each DSP56367 executes its on-chip Bootstrap ROM at `0xFFFF00` (192 words).
+4. As defined in Appendix A.1 (`HDI08CONT`), the bootstrap ROM polls `HRDF` in `HSR` and reads `HORX`: receiving a word count, a P-space start address (`P:0x0000`), and N program words without requiring any CVR access. (The ROM assembly checks `HF0` only, despite manual comments mentioning `HF1`).
 
 ### Phase 2: Host Stream Protocol
 
@@ -286,7 +297,10 @@ The Nord Modular G2 executes a four-phase bootstrap sequence to bring the octa-D
 
 ## Inter-DSP Audio Routing (ESAI Serial Bus)
 
-Audio signals and voice submixes pass between DSPs and physical DACs/ADCs via the **Enhanced Serial Audio Interface (ESAI)** operating in Time Division Multiplexing (TDM) network mode at a 96,000 Hz frame rate across 4 balanced inputs and 4 balanced outputs.
+Audio signals and voice submixes pass between DSPs and physical DACs/ADCs via the **Enhanced Serial Audio Interface (ESAI)** operating in Time Division Multiplexing (TDM) network mode at a 96,000 Hz frame rate across 4 balanced inputs and 4 balanced outputs:
+
+- **Dual ESAI Interfaces**: The DSP56367 integrates two Enhanced Serial Audio Interfaces (*DSP56367UM* Chapter 10). ESAI resides in X memory space, while ESAI_1 is mapped into Y memory space (`TSMA_1` at `Y:$FFFF99`). The two interfaces share four data pins, with ESAI_1 omitting `HCKR`/`HCKT`.
+- **Emulation Substrate Note**: Upstream Gearmulator configures `Peripherals56311` for DSP emulation. However, the physical DSP56311 contains only ESSI (with no ESAI support), whereas the G2 relies on the DSP56367's true 32-slot ESAI TDM network mode.
 
 ### Audio Bus Timing & Inter-DSP Multiplexing
 
@@ -302,20 +316,20 @@ The high native sample rate (96 kHz) requires precise bit clock and frame sync d
 | **Word Length** | 24 bits fixed-point |
 | **Inter-DSP Bandwidth** | > 73.7 Mbit/s aggregate serial throughput |
 
-Voice DSPs output their individual audio streams into assigned TDM time slots on the shared serial ring. DSP 0 reads these submixes from the serial bus without CPU intervention, mixes voices into output buses, applies master effects, and streams the final stereo master to the physical DACs.
+Voice DSPs output audio streams into assigned TDM time slots on the shared serial ring. DSP 0 reads these submixes from the serial bus without CPU intervention, mixes voices into output buses, applies master effects, and streams the final stereo master to physical DACs.
 
 ## Front Panel & User Interface Subsystem
 
-The physical user interface of the G2 keyboard models is managed entirely by the ColdFire MCU via dedicated chip-select windows and serial buses:
+The physical user interface of the G2 keyboard models is managed by the ColdFire MCU via dedicated chip-select windows and serial buses:
 
 - **4 Graphical LCD Displays**: High-contrast dot-matrix displays divided into parameter cells showing module names, rotary values, filter curves, and sequencer steps.
-- **8 Endless Rotary Encoders**: Surrounded by a circular ring of 15 red LEDs that illuminate dynamically to indicate parameter position, bipolar offset, or modulation depth.
+- **8 Endless Rotary Encoders**: Surrounded by circular rings of 15 red LEDs that illuminate dynamically to indicate parameter position, bipolar offset, or modulation depth.
 - **Dedicated Panel SRAM (CS4)**: 64 KiB of fast static RAM mapped at `0x14000000` buffers display bitmaps and LED states. The ColdFire updates this buffer; panel hardware rasterizes to the displays.
-- **Hardware Latches & Straps (CS5)**: Chip Select 5 (`CS5` at `0x15000000`) provides access to physical latches and board identification straps to distinguish between G2 Keyboard, G2X, and G2 Engine hardware configurations. Signals route across 26-pin ribbon connector `P7` (Mainboard) to `P1` (Panel), carrying `CS5`, `A0..A2`, `R/W`, `D24..D31`, and I²C lines.
+- **Hardware Latches & Straps (CS5)**: Chip Select 5 (`CS5` at `0x15000000`) provides access to physical latches and board identification straps distinguishing G2 Keyboard, G2X, and G2 Engine hardware configurations. Signals route across 26-pin ribbon connector `P7` (Mainboard) to `P1` (Panel), carrying `CS5`, `A0..A2`, `R/W`, `D24..D31`, and I²C lines.
 
 ### Maxim MAX1039 I²C Analogue Converter
 
-An onboard Maxim MAX1039 8-bit, 12-channel A/D converter (`U12` on the panel board, 7-bit I²C address `0x65`) is polled continuously over the ColdFire on-chip M-Bus interface. The hardware pins provide 11 settable analogue inputs (`AIN0`–`AIN10`), while pin 13 is `AIN11/REF` tied to the reference voltage rail. The firmware scanning loop monitors five active physical analogue controls:
+An onboard Maxim MAX1039 8-bit, 12-channel A/D converter (`U12` on the panel board, 7-bit I²C address `0x65`) is polled continuously over the ColdFire on-chip M-Bus interface. The hardware pins provide 11 settable analogue inputs (`AIN0`–`AIN10`), while pin 13 is `AIN11/REF` tied to reference voltage. The firmware scanning loop monitors five active physical analogue controls:
 
 | Channel Index | Physical Control | Description |
 |---|---|---|
@@ -328,7 +342,7 @@ An onboard Maxim MAX1039 8-bit, 12-channel A/D converter (`U12` on the panel boa
 
 ## MIDI & USB Subsystems
 
-The Nord Modular G2 features dual communication interfaces: legacy 5-pin DIN MIDI for musical performance and high-speed USB for real-time editor communication and bulk data exchange.
+The G2 features dual communication interfaces: legacy 5-pin DIN MIDI for musical performance and high-speed USB for real-time editor communication and bulk data exchange.
 
 ### DUART MIDI & Sysex Protocol
 
@@ -355,9 +369,9 @@ High-speed communication with the PC/Mac G2 Editor is provided by an on-chip Phi
 
 | Endpoint | Direction | FIFO Size | Purpose |
 |---|---|---|---|
-| **Endpoint 0** | IN / OUT | 64 bytes | Standard USB enumeration, device descriptors, vendor requests |
-| **Endpoint 1** | IN | 16 bytes | Real-time panel telemetry, encoder turns, front-panel button events |
-| **Endpoint 3** | OUT | 64 bytes | High-speed patch graph downloads, DSP machine code, parameter updates |
+| **Endpoint 0** | IN / OUT | 64 bytes | Standard USB enumeration, descriptors, vendor requests |
+| **Endpoint 1** | IN | 16 bytes | Real-time panel telemetry, encoder turns, button events |
+| **Endpoint 3** | OUT | 64 bytes | Patch graph downloads, DSP machine code, parameter updates |
 | **Endpoint 3** | IN | 64 bytes | Real-time VU metering telemetry, patch uploads to editor |
 
 Nord Modular G2 patch files (`.pch2`) are hierarchical structured binary containers using 4-byte ASCII chunk tags and 32-bit big-endian length headers:
@@ -365,12 +379,12 @@ Nord Modular G2 patch files (`.pch2`) are hierarchical structured binary contain
 | Chunk Tag | Description | Contents |
 |---|---|---|
 | **`PCH2`** | File Header | Format version identifier and integrity checksums |
-| **`HEAD`** | Patch Metadata | Patch title, author, category, creation timestamp, and comments |
-| **`MODG`** | Module Graph | List of audio and control modules, types, and grid coordinates |
+| **`HEAD`** | Patch Metadata | Patch title, author, category, timestamp, comments |
+| **`MODG`** | Module Graph | List of audio and control modules, types, grid coordinates |
 | **`CONN`** | Cable Connections | Wiring list connecting module output jacks to module input jacks |
-| **`PARM`** | Parameter Table | Initial knob positions, switch states, and bipolar attenuators |
+| **`PARM`** | Parameter Table | Initial knob positions, switch states, bipolar attenuators |
 | **`MRPH`** | Morph Assignments | Modulation routing from physical controllers to parameter targets |
-| **`CODE`** | DSP Bytecode | Precompiled 24-bit DSP machine code blocks for fast PRAM injection |
+| **`CODE`** | DSP Bytecode | Precompiled 24-bit DSP machine code blocks for PRAM injection |
 
 ## Cycle-Accurate Emulation Architecture (rg2Lib)
 
@@ -386,16 +400,16 @@ The Red Gecko 2 implementation in Gearmulator is housed under `source/claudia/rg
 
 The C++ hardware substrate in `rg2Lib` models the physical board assembly:
 
-- `Board` (`board.cpp`): Bridges the ColdFire context with memory-mapped devices, chip-select decoders, and the multi-DSP scheduler.
-- `Sim` (`sim.cpp`): Models the MCF5407 System Integration Module, chip select address and mask registers, and timers.
+- `Board` (`board.cpp`): Bridges ColdFire context with memory-mapped devices, chip-select decoders, and the multi-DSP scheduler.
+- `Sim` (`sim.cpp`): Models the MCF5407 System Integration Module, chip select registers, and timers.
 - `InterruptController` (`interruptController.cpp`): Implements the two-tier interrupt arbiter, prioritizing internal peripheral sources and external pins.
-- `Hdi08Adapter` (`hdi08Adapter.cpp`): Emulates the active-low one-cold address decode (A3..A10) and bidirectional 24-bit FIFO handshakes.
+- `Hdi08Adapter` (`hdi08Adapter.cpp`): Emulates active-low one-cold address decode (A3..A10) and bidirectional 24-bit FIFO handshakes.
 - `Scheduler` (`scheduler.cpp`): Coordinates the 162.0 MHz ColdFire CPU and eight 147.456 MHz DSP56367 processors using rational cycle-debt accounting, budgeting instruction cycles against the 96 kHz audio frame period (1,536 DSP cycles).
 
 ### Emulation Status & Known Limitations
 
-- **Resident Kernel Audio Verified**: Booting and baseline audio synthesis execute cleanly through the resident firmware kernel (`t1_boot` and audio test suites pass).
-- **DSP JIT Parameter Engine**: Full end-to-end user patch compilation is currently constrained by an open issue in the DSP JIT engine: DO-loop end addresses are not yet re-derived when the guest writes to the Loop Address (`LA`) register through the host port. Audio output in current builds originates from the resident firmware kernel.
+- **Resident Kernel Audio Verified**: Booting and baseline audio synthesis execute cleanly through resident firmware kernel (`t1_boot` and audio test suites pass).
+- **DSP JIT Parameter Engine**: User patch compilation is constrained by an open issue in the DSP JIT engine: DO-loop end addresses are not yet re-derived when the guest writes to Loop Address (`LA`) via the host port. Audio output in current builds originates from the resident firmware kernel.
 
 ## Reverse Engineering Notes
 
@@ -443,3 +457,13 @@ Tracing the 26-pin ribbon cable connecting `MainBoard.P7` to `Panel.P1` resolved
 
 - **Philips ISP1181ADGG USB Controller**: Because standalone technical manuals for the legacy ISP1181 were unavailable in vendor archives, the register programming model in `mcf5407` was derived by referencing the *Philips ISP1362 Single-Chip Universal Serial Bus On-The-Go Controller* specification (Rev. 06) and analyzing USB packet captures from the running hardware.
 - **Maxim MAX1039 ADC**: Analysis of the ColdFire firmware scanning routine revealed that of the 12 analogue channels provided by the MAX1039, exactly five are active physical controls (*Maxim MAX1036–MAX1039 Low-Power 8-Bit ADCs*, document 19-3255). Channels 5 through 10 are tied to the PCB ground plane, and pin 13 is wired as the reference voltage (`AIN11/REF`).
+
+## Sources & References
+
+1. **Motorola Inc.**, *MCF5407 ColdFire® Integrated Microprocessor User's Manual*, Order Number `MCF5407UM/D`, Rev. 0.1, November 2001.
+2. **Freescale Semiconductor**, *DSP56367 24-Bit Digital Signal Processor User's Manual*, Document Number `DSP56367UM`, Rev. 2.1, August 2006.
+3. **Freescale Semiconductor**, *ColdFire® Family Programmer's Reference Manual*, Rev. 3 (`CFPRM`), March 2005.
+4. **Motorola Inc.**, *MCF5485 ColdFire Microprocessor Hardware Specification*, Document `MCF5485EC`, Rev. 4, December 2004.
+5. **Philips Semiconductors**, *ISP1362 Single-Chip Universal Serial Bus On-The-Go Controller*, Data Sheet Rev. 06, 2004.
+6. **Maxim Integrated Products**, *MAX1036–MAX1039 Low-Power, 8-Bit, Multichannel ADCs with I²C Compatible Interface*, Document `19-3255`, Rev. 4, October 2005.
+7. **Clavia DMI AB**, *Nord Modular G2 / G2X Schematics and Hardware PCB Assemblies*, 2003–2004.
