@@ -23,8 +23,8 @@ The Clavia Nord Modular G2 (2004) is a hardware-accelerated modular synthesizer.
 
 ### Hardware Variants
 
-- **G2 (Keyboard)** — 3-octave keyboard with aftertouch, 4 graphical LCDs, 8 rotary encoders with 15-LED rings, pitch stick, mod wheel, 4× DSP56367 baseboard (expandable to 8).
-- **G2X (Keyboard)** — 5-octave keyboard with aftertouch, dual mod wheels, pitch stick, 4 graphical LCDs, factory-fitted expansion board (8× DSP56367 total).
+- **G2 (Keyboard)** — 3-octave keyboard with aftertouch, 5 graphical LCDs, 8 rotary encoders with 15-LED rings, pitch stick, mod wheel, 4× DSP56367 baseboard (expandable to 8).
+- **G2X (Keyboard)** — 5-octave keyboard with aftertouch, dual mod wheels, pitch stick, 5 graphical LCDs, factory-fitted expansion board (8× DSP56367 total).
 - **G2 Engine (1U Rack)** — 1U rackmount without front panel controls, LCDs, or keyboard. Controllable via USB and MIDI, 4× DSP56367 baseboard (expandable to 8).
 
 ### Key Specifications
@@ -44,7 +44,7 @@ The Clavia Nord Modular G2 (2004) is a hardware-accelerated modular synthesizer.
 | **Firmware & Patch Flash** | 8 MiB NOR Flash window mapped at `0x12000000` (CS2) |
 | **Boot Flash** | 512 KiB NOR Flash mapped at CS0 / CSBOOT (`U21`) |
 | **USB Controller** | Philips ISP1181ADGG (`U24`) Full-Speed USB controller |
-| **Panel Displays** | 4× multi-cell graphical LCDs (quiescent CS4 buffer in emulation) |
+| **Panel Displays** | 5× multi-cell graphical LCDs (quiescent CS4 buffer in emulation) |
 | **Panel Controls** | 5 scanned analogue inputs via Maxim MAX1039 I²C ADC; encoders |
 
 ### Architectural Comparison with Sibling Synthesizers
@@ -79,17 +79,17 @@ The Motorola MCF5407 is a 32-bit microprocessor based on the ColdFire Version 4 
 The physical address space is decoded via Chip Select registers (CSAR0–CSCR5) and the Module Base Address Register (MBAR):
 
 ```
-┌───────────────────────┬────────┬────────┬────────────────────────────┬─────────────────────────────────────────────┐
-│ Address Range         │ Size   │ Region │ Authority / Source         │ Description                                 │
-├───────────────────────┼────────┼────────┼────────────────────────────┼─────────────────────────────────────────────┤
-│ 0x10000000–0x100003FF │ 1 KiB  │ MBAR   │ Loader (`movec %d0,%mbar`) │ SIM (System Integration Module registers)   │
-│ 0x11000000–0x110007FF │ 2 KiB  │ CS1    │ Firmware (`g_cs1Base`)     │ Host Data Interface (HDI08) to all 8 DSPs   │
-│ 0x12000000–0x127FFFFF │ 8 MiB  │ CS2    │ Loader (`CSAR2=$1200`)     │ Firmware & Patch NOR Flash (U37)            │
-│ 0x13000000–0x1300000F │ 16 B   │ CS3    │ Loader (`CSAR3=$1300`)     │ Philips ISP1181ADGG USB Controller (U24)    │
-│ 0x14000000–0x1400FFFF │ 64 KiB │ CS4    │ Schematic & Emulation      │ Front Panel Display SRAM Buffer             │
-│ 0x15000000–0x1500000F │ 16 B   │ CS5    │ Firmware (`g_cs5Base`)     │ Hardware Latches, Model Straps & Panel P7   │
-│ 0x30000000–0x307FFFFF │ 8 MiB  │ SDRAM  │ Firmware (`0x30000400`)    │ Main System SDRAM (RTOS, Heaps, Patches)    │
-└───────────────────────┴────────┴────────┴────────────────────────────┴─────────────────────────────────────────────┘
+┌───────────────────────┬────────┬────────┬────────────────────────────────┬─────────────────────────────────────────────┐
+│ Address Range         │ Size   │ Region │ Authority / Source             │ Description                                 │
+├───────────────────────┼────────┼────────┼────────────────────────────────┼─────────────────────────────────────────────┤
+│ 0x10000000–0x100003FF │ 1 KiB  │ MBAR   │ Loader (`movec %d0,%mbar`)     │ SIM (System Integration Module registers)   │
+│ 0x11000000–0x110007FF │ 2 KiB  │ CS1    │ Firmware (`g_cs1Base`)         │ Host Data Interface (HDI08) to all 8 DSPs   │
+│ 0x12000000–0x127FFFFF │ 8 MiB  │ CS2    │ Loader (`CSAR2=$1200`)         │ Firmware & Patch NOR Flash (U37)            │
+│ 0x13000000–0x1300000F │ 16 B   │ CS3    │ Loader (`CSAR3=$1300`)         │ Philips ISP1181ADGG USB Controller (U24)    │
+│ 0x14000000–0x1400FFFF │ 64 KiB │ CS4    │ Emulation (Configured Default) │ Front Panel Display SRAM Buffer             │
+│ 0x15000000–0x1500000F │ 16 B   │ CS5    │ Firmware (`g_cs5Base`)         │ Hardware Latches, Model Straps & Panel P7   │
+│ 0x30000000–0x307FFFFF │ 8 MiB  │ SDRAM  │ Firmware (`0x30000400`)        │ Main System SDRAM (RTOS, Heaps, Patches)    │
+└───────────────────────┴────────┴────────┴────────────────────────────────┴─────────────────────────────────────────────┘
 ```
 
 *Note: CS0 is a 512 KiB boot ROM window mapped to `U21`; initial boot begins at the CSBOOT vector.*
