@@ -132,7 +132,7 @@ The G2 utilizes a partitioned dual-flash architecture separating boot initializa
 | Flash Offset | Size | Purpose | Contents |
 |---|---|---|---|
 | `0x000000–0x07FFFF` | 512 KiB | Main RTOS Runtime | `CODE_30000400.bin` image unpacked into SDRAM at `$30000400` |
-| `0x080000–0x0FFFFF` | 512 KiB | System Resources | Graphical LCD bitmap fonts, parameter curves, lookup tables |
+| `0x080000–0x0FFFFF` | 512 KiB | System Resources | System lookup tables, parameter curves, and UI display data |
 | `0x100000–0x1FFFFF` | 1 MiB | DSP Kernel Binaries | DSP bootstrap loaders, resident audio kernels, math routines |
 | `0x200000–0x4FFFFF` | 3 MiB | Factory Presets | Factory patch banks (Banks 1–8) and performance setups |
 | `0x500000–0x7FFFFF` | 3 MiB | User Storage | User patch banks (Banks 9–16), system settings, MIDI setups |
