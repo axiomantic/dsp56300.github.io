@@ -23,8 +23,8 @@ The Clavia Nord Modular G2 (2004) is a hardware-accelerated modular synthesizer.
 
 ### Hardware Variants
 
-- **G2 (Keyboard)** — 3-octave keyboard with aftertouch, 5 graphical LCDs, 8 rotary encoders with 15-LED rings, pitch stick, mod wheel, 4× DSP56367 baseboard (expandable to 8).
-- **G2X (Keyboard)** — 5-octave keyboard with aftertouch, dual mod wheels, pitch stick, 5 graphical LCDs, factory-fitted expansion board (8× DSP56367 total).
+- **G2 (Keyboard)** — 3-octave keyboard with aftertouch, 5 LCDs, 8 rotary encoders with 15-LED rings, pitch stick, mod wheel, 4× DSP56367 baseboard (expandable to 8).
+- **G2X (Keyboard)** — 5-octave keyboard with aftertouch, dual mod wheels, pitch stick, 5 LCDs, factory-fitted expansion board (8× DSP56367 total).
 - **G2 Engine (1U Rack)** — 1U rackmount without front panel controls, LCDs, or keyboard. Controllable via USB and MIDI, 4× DSP56367 baseboard (expandable to 8).
 
 ### Key Specifications
@@ -44,7 +44,7 @@ The Clavia Nord Modular G2 (2004) is a hardware-accelerated modular synthesizer.
 | **Firmware & Patch Flash** | 8 MiB NOR Flash window mapped at `0x12000000` (CS2) |
 | **Boot Flash** | 512 KiB NOR Flash mapped at CS0 / CSBOOT (`U21`) |
 | **USB Controller** | Philips ISP1181ADGG (`U24`) Full-Speed USB controller |
-| **Panel Displays** | 5× multi-cell graphical LCDs (quiescent CS4 buffer in emulation) |
+| **Panel Displays** | 5× multi-cell LCDs (quiescent CS4 buffer in emulation) |
 | **Panel Controls** | 5 scanned analogue inputs via Maxim MAX1039 I²C ADC; encoders |
 
 ### Architectural Comparison with Sibling Synthesizers
