@@ -322,9 +322,9 @@ Voice DSPs output audio streams into assigned TDM time slots on the shared seria
 
 The physical user interface of the G2 keyboard models is managed by the ColdFire MCU via dedicated chip-select windows and serial buses:
 
-- **4 Graphical LCD Displays**: High-contrast dot-matrix displays divided into parameter cells showing module names, rotary values, filter curves, and sequencer steps.
+- **5 High-Contrast LCD Displays**: 1 Main Patch LCD (left) displaying patch name and slot status, plus 4 multi-cell parameter displays (right) positioned above the encoder columns, showing module names, rotary values, and parameter status.
 - **8 Endless Rotary Encoders**: Surrounded by circular rings of 15 red LEDs that illuminate dynamically to indicate parameter position, bipolar offset, or modulation depth.
-- **Dedicated Panel SRAM (CS4)**: 64 KiB of fast static RAM mapped at `0x14000000` buffers display bitmaps and LED states. The ColdFire updates this buffer; panel hardware rasterizes to the displays.
+- **Dedicated Panel SRAM (CS4)**: In emulation, 64 KiB of static RAM mapped at `0x14000000` buffers display bitmaps and LED states. The ColdFire updates this buffer; panel hardware rasterizes to the displays.
 - **Hardware Latches & Straps (CS5)**: Chip Select 5 (`CS5` at `0x15000000`) provides access to physical latches and board identification straps distinguishing G2 Keyboard, G2X, and G2 Engine hardware configurations. Signals route across 26-pin ribbon connector `P7` (Mainboard) to `P1` (Panel), carrying `CS5`, `A0..A2`, `R/W`, `D24..D31`, and I²C lines.
 
 ### Maxim MAX1039 I²C Analogue Converter
@@ -451,7 +451,7 @@ Tracing the 26-pin ribbon cable connecting `MainBoard.P7` to `Panel.P1` resolved
 - **Pin 12**: Carries the `R/W` control strobe.
 - **Pins 18–25**: Carry the 8-bit data bus `D24..D31`.
 - **Pins 9–10**: Carry the I²C `SCL` and `SDA` signals from the ColdFire M-Bus controller to the MAX1039 ADC.
-- **`CS4` Stays on Mainboard**: Chip Select 4 (`CS4`) does not route across ribbon `P7`. CS4 drives dedicated 64 KiB SRAM on the mainboard used to stage LCD framebuffers.
+- **CS4 Display Staging Buffer**: In emulation, Chip Select 4 (`CS4`) defaults to a 64 KiB staging window at `0x14000000` buffering front panel display data, pending authoritative GDB trace confirmation of physical board routing.
 
 ### Peripheral Protocol Recovery (ISP1181 & MAX1039)
 
